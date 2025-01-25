@@ -1,4 +1,4 @@
-#Ethereum Wallet Activity Monitor
+Ethereum Wallet Activity Monitor
 
 📜 Project Overview
 The Ethereum Wallet Activity Monitor is a user-friendly web-based tool for monitoring Ethereum wallet activities, visualizing transaction patterns, and detecting suspicious activities. This tool provides wallet owners and blockchain enthusiasts with actionable insights about their wallet's performance and security.
