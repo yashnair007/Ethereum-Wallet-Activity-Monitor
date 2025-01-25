@@ -7,6 +7,9 @@ import plotly.express as px
 import numpy as np
 import pandas as pd
 import networkx as nx
+import smtplib
+from email.mime.multipart import MIMEMultipart
+from email.mime.text import MIMEText
 
 bright_colors = ['#FF007F', '#FFB400', '#00FF7F', '#00D9FF', '#FF7F00', '#FF00FF', '#FFFF00', '#00FF00']
 
@@ -129,6 +132,103 @@ def detect_suspicious_activity(transactions, wallet_creation_date, wallet_balanc
             activity_counts["Repetitive Transactions"] += 1
 
     return suspicious_transactions, activity_counts
+
+def generate_detailed_security_summary(activity_counts, suspicious_activities):
+    summary = []
+    
+    # Security Risk Levels
+    def risk_level(count, activity_type):
+        if count > 0:
+            if activity_type in ["Large Transaction", "Failed Transaction", "High Spend with Low Balance"]:
+                return "High Risk"
+            elif activity_type in ["Frequent Transaction", "Repetitive Transactions", "Transaction Diversity"]:
+                return "Medium Risk"
+            else:
+                return "Low Risk"
+        return "No Issues"
+
+    # Security Overview
+    summary.append("### Security Overview:")
+    
+    # 1. Blacklisted Address
+    if activity_counts["Blacklisted Address"] > 0:
+        summary.append(f"**{risk_level(activity_counts['Blacklisted Address'], 'Blacklisted Address')}**: "
+                       "This wallet has interacted with one or more blacklisted addresses. "
+                       "Blacklisted addresses are typically associated with fraudulent or suspicious activities, "
+                       "such as money laundering or scam operations. It is highly advised not to send funds to this wallet if it has interacted with any blacklisted addresses.")
+    
+    # 2. Self Transactions
+    if activity_counts["Self Transaction"] > 0:
+        summary.append(f"**{risk_level(activity_counts['Self Transaction'], 'Self Transaction')}**: "
+                       "There have been self-transactions detected in the wallet. "
+                       "Self-transactions often point to attempts to hide the true source or destination of funds, or they might be used to obfuscate the wallet's activity trail. "
+                       "These transactions can indicate potential laundering behavior or other illicit activities. Review the transactions carefully for unusual patterns.")
+    
+    # 3. Failed Transactions
+    if activity_counts["Failed Transaction"] > 0:
+        summary.append(f"**{risk_level(activity_counts['Failed Transaction'], 'Failed Transaction')}**: "
+                       "There are failed transactions associated with this wallet. "
+                       "While occasional failures can occur due to network issues, persistent failures can indicate problems with the wallet's security, "
+                       "incorrect contract interaction, or deliberate attempts to disrupt transaction history. Consider verifying the wallet's health and connection status.")
+    
+    # 4. High Gas Fee
+    if activity_counts["High Gas Fee"] > 0:
+        summary.append(f"**{risk_level(activity_counts['High Gas Fee'], 'High Gas Fee')}**: "
+                       "Certain transactions have been executed with disproportionately high gas fees (greater than 5% of the transaction value). "
+                       "This can be a sign of either an intentional attempt to drain funds with high costs or errors in contract interaction. "
+                       "It is recommended to monitor future gas fees closely and avoid engaging in transactions with excessively high fees.")
+    
+    # 5. Frequent Transactions
+    if activity_counts["Frequent Transaction"] > 0:
+        summary.append(f"**{risk_level(activity_counts['Frequent Transaction'], 'Frequent Transaction')}**: "
+                       "This wallet has made a high frequency of transactions within a short period. "
+                       "Frequent transactions might indicate an automated system or bot operating the wallet, which could be a sign of fraudulent activities like phishing, or other malicious use cases. "
+                       "Carefully evaluate the nature of each transaction to determine if this is suspicious or abnormal activity.")
+    
+    # 6. High Spend with Low Balance
+    if activity_counts["High Spend with Low Balance"] > 0:
+        summary.append(f"**{risk_level(activity_counts['High Spend with Low Balance'], 'High Spend with Low Balance')}**: "
+                       "The wallet is spending a large portion of its balance despite having a relatively low overall balance. "
+                       "This could indicate reckless spending behavior or, in some cases, attempts to drain the wallet’s funds rapidly. "
+                       "If you are the owner or a potential counterparty, consider re-evaluating the wallet's current financial stability and assess any pending transactions.")
+    
+    # 7. Large Transactions
+    if activity_counts["Large Transaction"] > 0:
+        summary.append(f"**{risk_level(activity_counts['Large Transaction'], 'Large Transaction')}**: "
+                       "This wallet has been involved in transactions of unusually large amounts. "
+                       "Large transfers often indicate high-value transfers that could be linked to illicit activities, including large-scale fraud or asset concealment. "
+                       "If you are considering interacting with this wallet, exercise extra caution, verify the source of funds, and assess the legitimacy of the transaction.")
+    
+    # 8. Large Transaction for New Wallet
+    if activity_counts["Large Transaction for New Wallet"] > 0:
+        summary.append(f"**{risk_level(activity_counts['Large Transaction for New Wallet'], 'Large Transaction for New Wallet')}**: "
+                       "A large transaction was detected soon after the wallet was created. "
+                       "New wallets making large transactions could be an indication of suspicious behavior or attempts to quickly launder funds. "
+                       "This behavior warrants a higher level of scrutiny before interacting with this wallet.")
+    
+    # 9. Transaction Diversity
+    if activity_counts["Transaction Diversity"] > 0:
+        summary.append(f"**{risk_level(activity_counts['Transaction Diversity'], 'Transaction Diversity')}**: "
+                       "This wallet has interacted with an unusually large number of unique addresses. "
+                       "While diversification in transaction partners can be normal, this could also suggest an attempt to obfuscate the wallet’s activities or involve it in diverse operations that could be illicit. "
+                       "Investigating the pattern of address interactions is recommended.")
+    
+    # 10. Repetitive Transactions
+    if activity_counts["Repetitive Transactions"] > 0:
+        summary.append(f"**{risk_level(activity_counts['Repetitive Transactions'], 'Repetitive Transactions')}**: "
+                       "The wallet has made multiple repetitive transactions with the same address. "
+                       "Repeated interactions could suggest a controlled operation or targeted manipulation of the wallet, potentially for fraudulent activities. "
+                       "Check the recipient addresses for known suspicious or untrustworthy entities.")
+
+    # Recommendations for Interaction
+    summary.append("\n### Recommendations for Interaction:")
+    summary.append("1. **Avoid Interaction with High-Risk Patterns**: Avoid interacting with this wallet if you notice any blacklisted addresses or high-risk behavior, like self-transactions or large/failed transactions.")
+    summary.append("2. **Verify Sources and Destinations**: Confirm the legitimacy of large transactions and verify any involved addresses before sending funds.")
+    summary.append("3. **Monitor Gas Fees**: Keep an eye on gas fees and avoid transactions with excessive costs unless absolutely necessary.")
+    summary.append("4. **Consider Further Investigation**: It is advisable to conduct a more in-depth investigation if you are unsure about the wallet’s legitimacy or transactions.")
+    summary.append("5. **Seek Professional Advice**: If you're dealing with significant amounts of funds, consider consulting a blockchain security expert or using blockchain forensics services.")
+
+    return "\n".join(summary)
 
 # Function to plot pie chart with animation
 def plot_pie_chart(activity_counts):
@@ -451,7 +551,35 @@ def plot_transaction_activity_timeline(transactions):
     
 
 
-# Main script using Streamlit to create a simple web app
+import smtplib
+from email.mime.multipart import MIMEMultipart
+from email.mime.text import MIMEText
+
+# Set up the email credentials
+from_email = 'yashputhalath123@gmail.com'  # Replace with your Gmail address
+app_password = 'lpukkozqnakvoazi'  # Replace with your generated app password
+to_email = 'yashnair369@gmail.com'  # Replace with the recipient's email address
+
+# Function to send the email
+def send_email(subject, body):
+    # Set up the SMTP server
+    server = smtplib.SMTP_SSL('smtp.gmail.com', 465)
+    server.login(from_email, app_password)
+
+    # Create the email
+    msg = MIMEMultipart()
+    msg['From'] = from_email
+    msg['To'] = to_email
+    msg['Subject'] = subject
+
+    # Attach the body (report content)
+    msg.attach(MIMEText(body, 'plain'))
+
+    # Send the email
+    server.sendmail(from_email, to_email, msg.as_string())
+    server.quit()
+
+# Main function
 if __name__ == "__main__":
     # Add custom CSS to set blockchain.jpg as the background
     st.markdown("""<style>
@@ -468,24 +596,21 @@ if __name__ == "__main__":
             align-items: center;
             color: white;
         }
-
         h1 {
             font-size: 3rem;
             font-weight: bold;
-            text-shadow: 0 0 20px rgba(0, 255, 255, 0.8);
+            text-shadow: 0 0 20px rgba(236, 15, 155, 0.8);
         }
-
         .wallet-balance {
             font-size: 40px;
             font-weight: bold;
-            color: #A3BE8C;
+            color:rgb(237, 29, 119);
             margin-top: 20px;
             text-align: center;
             animation: bounce 2s infinite ease-in-out;
         }
-
         .stButton>button {
-            background-color: #81A1C1;
+            background-color:rgb(207, 19, 107);
             color: white;
             border-radius: 10px;
             padding: 15px 30px;
@@ -493,23 +618,19 @@ if __name__ == "__main__":
             box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3);
             transition: all 0.4s ease;
         }
-
         .stButton>button:hover {
             background-color: #5E81AC;
             transform: scale(1.1);
         }
-
         .st-expanderHeader {
             font-size: 18px;
             color: #ECEFF4;
             font-weight: 600;
         }
-
         .st-expanderContent {
             font-size: 14px;
             color: #D8DEE9;
         }
-
         @keyframes bounce {
             0%, 100% {
                 transform: translateY(0);
@@ -520,11 +641,8 @@ if __name__ == "__main__":
         }
     </style>""", unsafe_allow_html=True)
 
-
-
     # Title and wallet address input
     st.title("Ethereum Wallet Activity Monitor")
-
     wallet_address_input = st.text_input("Enter Ethereum Wallet Address", value=WALLET_ADDRESS)
 
     if 'history' not in st.session_state:
@@ -538,6 +656,10 @@ if __name__ == "__main__":
             suspicious_activities, activity_counts = detect_suspicious_activity(recent_transactions, wallet_creation_date, balance)
 
         st.markdown(f'<div class="wallet-balance">Wallet Balance: {balance:.4f} ETH</div>', unsafe_allow_html=True)
+        # Show detailed security summary
+        security_summary = generate_detailed_security_summary(activity_counts, suspicious_activities)
+        st.markdown("### Comprehensive Security Summary")
+        st.write(security_summary)
 
         # Add this wallet's details to history
         st.session_state['history'].append({
@@ -557,112 +679,113 @@ if __name__ == "__main__":
                     for tx in relevant_activities:
                         st.write(f"- {tx['details']} (Tx Hash: {tx.get('tx_hash', 'N/A')})")
 
- # --- New Table for Recent Transactions ---
-    # Prepare the data for the table
-    import pandas as pd
+        # --- New Table for Recent Transactions ---
+        # Prepare the data for the table
+        import pandas as pd
 
-# Prepare the data for the table
-import pandas as pd
+        transaction_data = []
+        for tx in recent_transactions:
+            value_in_ether = int(tx["value"]) / (10 ** 18)
+            gas_price_in_ether = int(tx["gasPrice"]) / (10 ** 18)
+            gas_fee_in_ether = int(tx["gasUsed"]) * gas_price_in_ether if "gasUsed" in tx else 0
+            
+            transaction_data.append({
+                'Tx Hash': tx['hash'],
+                'From Address': tx['from'],
+                'To Address': tx['to'],
+                'Value (ETH)': f"{value_in_ether:.4f}",
+                'Gas Price (ETH)': f"{gas_price_in_ether:.10f}",
+                'Gas Used (ETH)': f"{gas_fee_in_ether:.10f}",
+                'Transaction Status': 'Success' if tx["isError"] == "0" else 'Failed'
+            })
 
-# Prepare the data for the table
-transaction_data = []
-for tx in recent_transactions:
-    value_in_ether = int(tx["value"]) / (10 ** 18)
-    gas_price_in_ether = int(tx["gasPrice"]) / (10 ** 18)
-    gas_fee_in_ether = int(tx["gasUsed"]) * gas_price_in_ether if "gasUsed" in tx else 0
-    
-    transaction_data.append({
-        'Tx Hash': tx['hash'],
-        'From Address': tx['from'],
-        'To Address': tx['to'],
-        'Value (ETH)': f"{value_in_ether:.4f}",
-        'Gas Price (ETH)': f"{gas_price_in_ether:.10f}",
-        'Gas Used (ETH)': f"{gas_fee_in_ether:.10f}",
-        'Transaction Status': 'Success' if tx["isError"] == "0" else 'Failed'
-    })
+        # Convert the list of transactions to a pandas DataFrame
+        transaction_df = pd.DataFrame(transaction_data)
 
-# Convert the list of transactions to a pandas DataFrame
-transaction_df = pd.DataFrame(transaction_data)
+        # Apply pandas styling to make the table visually appealing and set column widths
+        styled_df = transaction_df.style.set_properties(
+            **{
+                'font-size': '16px',   # Increase font size
+                'text-align': 'center',  # Center align the text in each column
+                'background-color': '#000000',  # Set the background color of the table to black
+                'color': '#FFFFFF',  # Red text color
+                'border': '1px solid #ddd',  # Add borders around the cells
+                'border-collapse': 'collapse',  # Collapse borders
+                'padding': '10px',  # Increase padding for cells
+            }
+        ).set_table_styles(
+            [{
+                'selector': 'thead th', 
+                'props': [('background-color', '#333333'),  # Dark background color for header
+                          ('color', 'white'),  # Header text color
+                          ('font-size', '18px'),  # Header font size
+                          ('padding', '15px')]}]  # Add padding to header cells
+        )
 
-# Apply pandas styling to make the table visually appealing and set column widths
-styled_df = transaction_df.style.set_properties(
-    **{
-        'font-size': '16px',   # Increase font size
-        'text-align': 'center',  # Center align the text in each column
-        'background-color': '#000000',  # Set the background color of the table to black
-        'color': '#FF0000',  # Red text color
-        'border': '1px solid #ddd',  # Add borders around the cells
-        'border-collapse': 'collapse',  # Collapse borders
-        'padding': '10px',  # Increase padding for cells
-    }
-).set_table_styles(
-    [{
-        'selector': 'thead th', 
-        'props': [('background-color', '#333333'),  # Dark background color for header
-                  ('color', 'white'),  # Header text color
-                  ('font-size', '18px'),  # Header font size
-                  ('padding', '15px')]}]  # Add padding to header cells
-)
+        # Set max-width and make it responsive
+        styled_df = styled_df.set_properties(
+            subset=['Tx Hash', 'From Address', 'To Address', 'Value (ETH)', 'Gas Price (ETH)', 'Gas Used (ETH)', 'Transaction Status'],
+            **{'max-width': '250px', 'overflow': 'hidden'}
+        )
 
-# Set max-width and make it responsive
-styled_df = styled_df.set_properties(
-    subset=['Tx Hash', 'From Address', 'To Address', 'Value (ETH)', 'Gas Price (ETH)', 'Gas Used (ETH)', 'Transaction Status'],
-    **{'max-width': '250px', 'overflow': 'hidden'}
-)
+        # Add custom CSS to make the table fit the available width without scrolling
+        st.markdown("""
+            <style>
+                .stDataFrame {
+                    width: 100%;  # Ensure the table takes up full width
+                    overflow: hidden;  # Prevent horizontal scroll
+                    white-space: nowrap;  # Prevent text from overflowing
+                }
+                .stDataFrame th, .stDataFrame td {
+                    max-width: 200px;  # Set column width limits
+                    text-overflow: ellipsis;  # Ensure text gets truncated if too long
+                    overflow: hidden;
+                    word-wrap: break-word;
+                }
+                .stDataFrame th {
+                    font-size: 18px;
+                    background-color: #333333;  # Dark background color for header
+                    color: white;  # White text color for header
+                }
+                .stDataFrame td {
+                    font-size: 16px;
+                    color:rgb(24, 2, 2);  # Red text color for the body of the table
+                }
+            </style>
+        """, unsafe_allow_html=True)
 
-# Add custom CSS to make the table fit the available width without scrolling
-st.markdown("""
-    <style>
-        .stDataFrame {
-            width: 100%;  # Ensure the table takes up full width
-            overflow: hidden;  # Prevent horizontal scroll
-            white-space: nowrap;  # Prevent text from overflowing
-        }
-        .stDataFrame th, .stDataFrame td {
-            max-width: 200px;  # Set column width limits
-            text-overflow: ellipsis;  # Ensure text gets truncated if too long
-            overflow: hidden;
-            word-wrap: break-word;
-        }
-        .stDataFrame th {
-            font-size: 18px;
-            background-color: #333333;  # Dark background color for header
-            color: white;  # White text color for header
-        }
-        .stDataFrame td {
-            font-size: 16px;
-            color: #FF0000;  # Red text color for the body of the table
-        }
-    </style>
-""", unsafe_allow_html=True)
+        # Show the styled DataFrame in Streamlit
+        st.write("### Recent Transactions")
+        st.dataframe(styled_df)
 
-# Show the styled DataFrame in Streamlit
-st.write("### Recent Transactions")
-st.dataframe(styled_df)
+        # Email Button
+        if st.button('Send Security Report via Email'):
+            send_email("Ethereum Wallet Security Report", security_summary)
+            st.success("Security report sent successfully!")
 
-# Visualization & Security checks (optional as per your existing code)
-st.sidebar.header("Security Issues Distribution")
-plot_pie_chart(activity_counts)
-plot_transaction_value_bar_chart(recent_transactions)
-plot_transaction_heatmap(recent_transactions)
-plot_spend_vs_balance(recent_transactions, balance)
-plot_transaction_count_over_time(recent_transactions)
-plot_top_5_largest_transactions(recent_transactions)
-plot_transaction_value_distribution(recent_transactions)
-plot_gas_fee_distribution(recent_transactions)
-plot_cumulative_transaction_value(recent_transactions)
-plot_address_interaction_network(recent_transactions)
-plot_transaction_value_trend(recent_transactions)
-plot_transaction_success_rate(recent_transactions)
-plot_transaction_activity_timeline(recent_transactions)
+        # Visualization & Security checks (optional as per your existing code)
+        st.sidebar.header("Security Issues Distribution")
+        plot_pie_chart(activity_counts)
+        plot_transaction_value_bar_chart(recent_transactions)
+        plot_transaction_heatmap(recent_transactions)
+        plot_spend_vs_balance(recent_transactions, balance)
+        plot_transaction_count_over_time(recent_transactions)
+        plot_top_5_largest_transactions(recent_transactions)
+        plot_transaction_value_distribution(recent_transactions)
+        plot_gas_fee_distribution(recent_transactions)
+        plot_cumulative_transaction_value(recent_transactions)
+        plot_address_interaction_network(recent_transactions)
+        plot_transaction_value_trend(recent_transactions)
+        plot_transaction_success_rate(recent_transactions)
+        plot_transaction_activity_timeline(recent_transactions)
 
-# Show history on the left sidebar
-if st.session_state['history']:
-    st.sidebar.header("Wallet History")
-    for entry in st.session_state['history']:
-        with st.sidebar.expander(f"Wallet: {entry['wallet']}"):
-            st.write(f"Balance: {entry['balance']:.4f} ETH")
-            for activity, count in entry['activity_counts'].items():
-                st.write(f"{activity}: {count} occurrences")
-            for tx in entry['suspicious_activities']:
-                st.write(f"- {tx['issue']}: {tx['details']}")
+        # Show history on the left sidebar
+        if st.session_state['history']:
+            st.sidebar.header("Wallet History")
+            for entry in st.session_state['history']:
+                with st.sidebar.expander(f"Wallet: {entry['wallet']}"):
+                    st.write(f"Balance: {entry['balance']:.4f} ETH")
+                    for activity, count in entry['activity_counts'].items():
+                        st.write(f"{activity}: {count} occurrences")
+                    for tx in entry['suspicious_activities']:
+                        st.write(f"- {tx['issue']}: {tx['details']}")
