@@ -14,9 +14,9 @@ from email.mime.text import MIMEText
 bright_colors = ['#FF007F', '#FFB400', '#00FF7F', '#00D9FF', '#FF7F00', '#FF00FF', '#FFFF00', '#00FF00']
 
 # Set up your Etherscan and Infura API keys
-INFURA_URL = "https://mainnet.infura.io/v3/5d419af494974b80a1d4579ac1109ee7"
-ETHERSCAN_API_KEY = "E8VZXYAHZDM21WC5FX14UB75NUINQ98QJT"
-WALLET_ADDRESS = "0x73f7b1184B5cD361cC0f7654998953E2a251dd58"
+INFURA_URL = "https://mainnet.infura.io/v3/INFURAAPIKEY"
+ETHERSCAN_API_KEY = "ETHERSCAN API KEY"
+WALLET_ADDRESS = "PUT WALLET ADDDRESS TO TEST"
 TRANSACTION_COUNT = 100  # Adjust the number of transactions to fetch
 THRESHOLD_ETH = 10  # Set threshold for large transactions in ETH
 
@@ -556,9 +556,9 @@ from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
 
 # Set up the email credentials
-from_email = 'yashputhalath123@gmail.com'  # Replace with your Gmail address
-app_password = 'lpukkozqnakvoazi'  # Replace with your generated app password
-to_email = 'yashnair369@gmail.com'  # Replace with the recipient's email address
+from_email = 'from email'  # Replace with your Gmail address
+app_password = 'temporary password generated for ur gmail'  # Replace with your generated app password
+to_email = 'email to send report to'  # Replace with the recipient's email address
 
 # Function to send the email
 def send_email(subject, body):
