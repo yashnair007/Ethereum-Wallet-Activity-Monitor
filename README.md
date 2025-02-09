@@ -27,11 +27,17 @@ A sleek and intuitive interface built with Streamlit and custom CSS for seamless
 
 🛠️ Technologies Used
 Frontend: Streamlit for building the web interface.
+
 Visualization: Plotly for creating dynamic and interactive charts.
+
 Blockchain Interaction: Etherscan API for retrieving wallet data and transactions.
+
 Email Notifications: smtplib and email.mime for automated email reporting.
+
 Data Handling: Pandas for efficient data processing.
+
 Custom Styling: HTML and CSS for enhanced UI/UX.
+
 📋 Setup Instructions
 Prerequisites
 Python 3.8 or higher
@@ -58,20 +64,7 @@ Explore detailed visualizations, suspicious activity alerts, and transaction ins
 Pie Chart: Transaction success vs. failure rates.
 Line Chart: Daily transaction activity over time.
 Table: Comprehensive transaction details.
-📂 Project Structure
-graphql
-Copy
-Edit
-ethereum-wallet-monitor/
-├── app.py                     # Main Streamlit application
-├── utils/
-│   ├── api_interactions.py    # Functions for interacting with the Etherscan API
-│   ├── visualizations.py      # Functions for creating charts and graphs
-│   ├── email_alerts.py        # Email notification logic
-├── templates/
-│   └── style.css              # Custom CSS for styling
-├── requirements.txt           # Python dependencies
-└── README.md                  # Project documentation
+
 
 ✨ Future Enhancements
 Add multi-chain support for other blockchains like Binance Smart Chain (BSC) or Polygon.
@@ -81,5 +74,5 @@ Deploy the app using services like AWS, Heroku, or Streamlit Cloud.
 
 📧 Contact
 For questions or feedback, reach out to:
-Name: Yash Puthalath
+Name: Yash 
 Email: yashputhalath123@gmail.com
